@@ -288,10 +288,10 @@ Number.isNaN('123')      // false
 
 | 特性 | var | let | const |
 |------|-----|-----|-------|
-| **作用域** | 函数作用域 | 块级作用域 | 块级作用域 |
-| **变量提升** | 是（值为undefined） | 是（暂时性死区） | 是（暂时性死区） |
-| **重复声明** | 可以 | 不可以 | 不可以 |
-| **全局挂载window** | 是 | 否 | 否 |
+| 作用域 | 函数作用域 | 块级作用域 | 块级作用域 |
+| 变量提升 | 是（值为undefined） | 是（暂时性死区） | 是（暂时性死区） |
+| 重复声明 | 可以 | 不可以 | 不可以 |
+| 全局挂载window | 是 | 否 | 否 |
 
 ### var - 函数作用域
 
@@ -382,37 +382,344 @@ function deepFreeze(obj) {
 
 ### 10. 箭头函数与普通函数的区别
 
-**待回答**
+**回答：**
+
+| 区别 | 箭头函数 | 普通函数 |
+|------|----------|----------|
+| this绑定 | 指向定义时的外层作用域 | 指向调用时的对象 |
+| arguments | 没有自己的arguments | 有自己的arguments |
+| constructor | 不能作为构造函数 | 可以作为构造函数 |
+| 原型 | 没有prototype | 有prototype |
+| yield | 不能作为Generator函数 | 可以作为Generator函数 |
+| 语法 | 简洁 | 完整 |
+
+### 代码示例
+
+```javascript
+// 1. this 绑定不同
+const obj = {
+  name: 'Tom',
+  regularFn: function() {
+    console.log(this.name); // 'Tom'
+  },
+  arrowFn: () => {
+    console.log(this.name); // undefined（指向window）
+  }
+};
+
+const regularFn = obj.regularFn;
+regularFn(); // 'Tom'（谁调用指向谁）
+
+const arrowFn = obj.arrowFn;
+arrowFn(); // undefined（定义时确定）
+
+// 2. constructor
+const Fn = () => {};
+new Fn(); // TypeError: Fn 不是构造函数
+
+function RegularFn() {}
+new RegularFn(); // ✓
+
+// 3. arguments
+function regular() {
+  console.log(arguments); // [1, 2, 3]
+}
+regular(1, 2, 3);
+
+const arrow = () => {
+  console.log(arguments); // ReferenceError
+};
+arrow(1, 2, 3);
+
+// 4. 简洁语法
+const add = (a, b) => a + b;
+const fn = () => ({ name: 'Tom' });
+```
 
 ---
 
 ### 11. 箭头函数的this指向哪里？
 
-**待回答**
+**回答：**
+
+箭头函数的 this 指向**定义时所在的外层作用域的 this**（静态绑定）。
+
+### 核心规则
+
+箭头函数没有自己的 this，它会捕获定义时最近外层函数的 this。
+
+```javascript
+const obj = {
+  name: 'Tom',
+  fn: function() {
+    // 这里的 this 指向 obj
+    const arrow = () => {
+      console.log(this.name); // 'Tom'
+    };
+    arrow();
+  }
+};
+
+obj.fn();
+```
+
+### 对比：普通函数的 this 指向调用者
+
+```javascript
+const obj = {
+  name: 'Tom',
+  fn: function() {
+    console.log(this.name); // 'Tom'
+  }
+};
+
+const fn = obj.fn;
+fn(); // undefined（普通函数 this 指向 window）
+```
+
+### 实际场景
+
+```javascript
+// 定时器中的 this 问题
+class Counter {
+  constructor() {
+    this.count = 0;
+  }
+
+  // 普通函数：需要 bind 或 arrow
+  increment() {
+    setInterval(function() {
+      console.log(this.count); // undefined（指向window）
+    }, 1000);
+  }
+
+  // 箭头函数：自动捕获外层 this
+  incrementArrow() {
+    setInterval(() => {
+      console.log(this.count); // 0
+    }, 1000);
+  }
+}
+```
+
+### 总结
+
+- 箭头函数：this 是**静态**的，由定义时外层作用域决定
+- 普通函数：this 是**动态**的，由调用时决定（谁调用指向谁）
 
 ---
 
 ### 12. 扩展运算符的作用及使用场景
 
-**待回答**
+**回答：**
+
+扩展运算符 `...` 可以将**可迭代对象**展开为单个元素。
+
+### 使用场景
+
+```javascript
+// 1. 数组展开
+const arr1 = [1, 2, 3];
+const arr2 = [...arr1, 4, 5]; // [1, 2, 3, 4, 5]
+
+// 2. 对象展开（ES9+）
+const obj1 = { name: 'Tom', age: 20 };
+const obj2 = { ...obj1, city: 'Beijing' }; // { name: 'Tom', age: 20, city: 'Beijing' }
+
+// 3. 函数参数
+const nums = [1, 2, 3];
+Math.max(...nums); // 3 等同于 Math.max(1, 2, 3)
+
+// 4. 复制数组（浅拷贝）
+const original = [1, 2, 3];
+const copy = [...original];
+
+// 5. 合并数组
+const a = [1, 2];
+const b = [3, 4];
+const combined = [...a, ...b]; // [1, 2, 3, 4]
+
+// 6. 复制对象
+const obj = { name: 'Tom' };
+const copyObj = { ...obj };
+
+// 7. 类数组对象转换为数组
+const likeArray = { 0: 'a', 1: 'b', length: 2 };
+const arr = [...likeArray]; // ['a', 'b']
+```
 
 ---
 
 ### 13. 对对象与数组的解构的理解
 
-**待回答**
+**回答：**
+
+解构赋值是一种从数组或对象中提取值的语法。
+
+### 数组解构
+
+```javascript
+// 基本用法
+const [a, b, c] = [1, 2, 3];
+// a = 1, b = 2, c = 3
+
+// 跳过元素
+const [a, , c] = [1, 2, 3];
+// a = 1, c = 3
+
+// 剩余模式
+const [a, ...rest] = [1, 2, 3, 4];
+// a = 1, rest = [2, 3, 4]
+
+// 默认值
+const [a = 1, b = 2] = [undefined, 3];
+// a = 1, b = 3
+
+// 交换变量
+let a = 1, b = 2;
+[a, b] = [b, a];
+// a = 2, b = 1
+```
+
+### 对象解构
+
+```javascript
+// 基本用法
+const { name, age } = { name: 'Tom', age: 20 };
+// name = 'Tom', age = 20
+
+// 重命名
+const { name: n, age: a } = { name: 'Tom', age: 20 };
+// n = 'Tom', a = 20
+
+// 默认值
+const { name = 'Tom', age = 0 } = { age: 20 };
+// name = 'Tom', age = 20
+
+// 剩余模式
+const { name, ...rest } = { name: 'Tom', age: 20, city: 'Beijing' };
+// name = 'Tom', rest = { age: 20, city: 'Beijing' }
+
+// 嵌套解构
+const obj = {
+  user: {
+    name: 'Tom',
+    address: { city: 'Beijing' }
+  }
+};
+const { user: { name, address: { city } } } = obj;
+// name = 'Tom', city = 'Beijing'
+```
+
+### 函数参数解构
+
+```javascript
+// 对象参数解构
+function fn({ name, age = 20 }) {
+  console.log(name, age);
+}
+fn({ name: 'Tom' }); // 'Tom', 20
+
+// 数组参数解构
+function fn([a, b]) {
+  console.log(a, b);
+}
+fn([1, 2]); // 1, 2
+```
 
 ---
 
 ### 14. 对 rest 参数的理解
 
-**待回答**
+**回答：**
+
+`...rest` 剩余参数将多余的参数收集为一个数组。
+
+```javascript
+// 收集多余参数
+function fn(a, b, ...rest) {
+  console.log(a, b, rest);
+}
+fn(1, 2, 3, 4, 5);
+// a = 1, b = 2, rest = [3, 4, 5]
+
+// 与解构结合
+const [first, ...others] = [1, 2, 3, 4];
+// first = 1, others = [2, 3, 4]
+
+// 替代 arguments
+function fn(...args) {
+  console.log(args); // 是真正的数组
+}
+fn(1, 2, 3);
+
+// 注意事项：rest 必须是最后一个参数
+function fn(a, ...rest, b) {} // SyntaxError
+```
 
 ---
 
 ### 15. 对原型的理解
 
-**待回答**
+**回答：**
+
+每个 JavaScript 对象都有一个 `prototype`（原型对象），对象可以从原型继承属性和方法。
+
+### 原型链
+
+```javascript
+function Person(name) {
+  this.name = name;
+}
+
+Person.prototype.sayHello = function() {
+  console.log('Hello, I am ' + this.name);
+};
+
+const tom = new Person('Tom');
+tom.sayHello(); // 'Hello, I am Tom'
+
+// tom 的原型链:
+// tom -> Person.prototype -> Object.prototype -> null
+```
+
+### prototype vs __proto__
+
+| 概念 | 说明 |
+|------|------|
+| `prototype` | 函数属性，指向原型对象 |
+| `__proto__` | 对象属性，指向构造函数的 prototype |
+
+```javascript
+function Fn() {}
+const fn = new Fn();
+
+fn.__proto__ === Fn.prototype // true
+```
+
+### 原型的作用
+
+1. **共享方法**：所有实例共享同一个方法，节省内存
+2. **继承**：实现对象间的属性和方法继承
+
+```javascript
+// 原型链继承
+function Animal(name) {
+  this.name = name;
+}
+
+Animal.prototype.eat = function() {
+  console.log(this.name + ' is eating');
+};
+
+function Dog(name, breed) {
+  Animal.call(this, name); // 借用构造函数
+  this.breed = breed;
+}
+
+Dog.prototype = Object.create(Animal.prototype);
+Dog.prototype.constructor = Dog;
+```
 
 ---
 
