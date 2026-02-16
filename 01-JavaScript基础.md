@@ -725,19 +725,175 @@ Dog.prototype.constructor = Dog;
 
 ### 16. 原型链的理解
 
-**待回答**
+**回答：**
+
+原型链是 JavaScript 实现继承的核心机制，每个对象通过 `__proto__` 属性指向它的原型，形成一条链式结构。
+
+### 原型链结构
+
+```javascript
+function Person(name) {
+  this.name = name;
+}
+
+const tom = new Person('Tom');
+
+console.log(tom.__proto__ === Person.prototype);        // true
+console.log(Person.prototype.__proto__ === Object.prototype); // true
+console.log(Object.prototype.__proto__);                // null
+```
+
+### 原型链查找
+
+```javascript
+tom.toString(); // 继承自 Object.prototype
+tom.hasOwnProperty('name'); // true，自身属性
+```
+
+### 原型链的终点
+
+```
+tom -> Person.prototype -> Object.prototype -> null
+```
 
 ---
 
 ### 17. 原型修改、重写
 
-**待回答**
+**回答：**
+
+### 原型修改
+
+```javascript
+function Person() {}
+Person.prototype.name = 'Tom';
+
+const p1 = new Person();
+console.log(p1.name); // 'Tom'
+
+Person.prototype.name = 'Jack';
+console.log(p1.name); // 'Jack'（已创建的实例也会受影响）
+```
+
+### 原型重写
+
+```javascript
+function Person(name) {
+  this.name = name;
+}
+
+// 重写整个原型对象
+Person.prototype = {
+  constructor: Person, // 需要手动指定 constructor
+  sayHello() {
+    console.log('Hello');
+  }
+};
+
+const p = new Person();
+p.sayHello(); // 'Hello'
+```
+
+### 原型继承
+
+```javascript
+// 原型链继承
+function Animal(name) {
+  this.name = name;
+}
+
+Animal.prototype.eat = function() {
+  console.log('eating');
+};
+
+function Dog(name) {
+  Animal.call(this, name);
+}
+
+// 关键：创建 Animal.prototype 的副本
+Dog.prototype = Object.create(Animal.prototype);
+Dog.prototype.constructor = Dog;
+
+// 添加 Dog 特有的方法
+Dog.prototype.bark = function() {
+  console.log('barking');
+};
+```
 
 ---
 
 ### 18. 对闭包的理解
 
-**待回答**
+**回答：**
+
+闭包是指**函数内部访问外部作用域变量**的机制，即使外部函数已经执行完毕，内部函数仍然可以访问外部函数的变量。
+
+### 闭包的形成
+
+```javascript
+function outer() {
+  const a = 1;  // 外部函数的变量
+
+  function inner() {
+    console.log(a); // 内部函数访问外部变量
+  }
+
+  return inner;
+}
+
+const fn = outer(); // outer 执行完毕，但 a 仍被 inner 引用
+fn(); // 1，闭包生效
+```
+
+### 闭包的作用
+
+1. **私有变量**
+   ```javascript
+   function createCounter() {
+     let count = 0;
+     return {
+       increment() { count++; },
+       getCount() { return count; }
+     };
+   }
+
+   const counter = createCounter();
+   counter.increment();
+   console.log(counter.getCount()); // 1
+   // count 无法从外部直接访问，实现了私有变量
+   ```
+
+2. **函数工厂**
+   ```javascript
+   function multiply(factor) {
+     return function(num) {
+       return num * factor;
+     };
+   }
+
+   const double = multiply(2);
+   const triple = multiply(3);
+   console.log(double(5)); // 10
+   console.log(triple(5)); // 15
+   ```
+
+3. **延续变量生命周期**
+
+### 闭包的问题（内存泄漏）
+
+```javascript
+// 内存泄漏：闭包引用大量数据
+function heavy() {
+  const largeData = new Array(1000000).fill('x');
+
+  return function() {
+    console.log(largeData[0]);
+  };
+}
+
+const fn = heavy();
+// largeData 不会被回收，因为被闭包引用
+```
 
 ---
 
