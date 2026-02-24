@@ -353,20 +353,16 @@ outer();
 
 **回答：**
 
-执行上下文的生命周期分为两个阶段：**创建阶段** 和 **执行阶段**。
-
-### 生命周期流程
-
-```
-创建阶段 → 执行阶段 → 销毁阶段
-```
+执行上下文的生命周期分为三个阶段：**创建阶段** → **执行阶段** → **销毁阶段**。
 
 ### 1. 创建阶段
 
-在代码执行之前，JavaScript 引擎会进行以下操作：
+在代码执行前，JavaScript 引擎会进行：
+- **创建变量对象（VO/AO）**：存储变量、函数声明、arguments
+- **建立作用域链**：链接当前作用域和父级作用域
+- **确定 this 指向**：根据调用方式确定
 
 ```javascript
-// 示例代码
 function fn(a, b) {
   var c = 3;
   function inner() {}
@@ -375,101 +371,44 @@ function fn(a, b) {
 fn(1, 2);
 
 // 创建阶段 fn 的执行上下文：
-// {
-//   AO: {
-//     a: 1,           // 形参赋值
-//     b: 2,           // 形参赋值
-//     c: undefined,   // 变量声明提升
-//     inner: function // 函数声明提升
-//   },
-//   ScopeChain: [AO(fn), 全局VO],
-//   this: window
+// AO: {
+//   a: 1,           // 形参赋值
+//   b: 2,           // 形参赋值
+//   c: undefined,   // 变量声明提升
+//   inner: function // 函数声明提升
 // }
-```
-
-#### 创建阶段的具体步骤：
-
-| 步骤 | 操作 | 说明 |
-|------|------|------|
-| 1 | 创建变量对象（VO/AO） | 存储变量、函数声明、arguments |
-| 2 | 建立作用域链 | 链接当前作用域和父级作用域 |
-| 3 | 确定 this 指向 | 根据调用方式确定 |
-
-#### 变量对象的创建顺序：
-
-```javascript
-function example(a, b) {
-  var c = 10;
-  function d() {}
-  var e = function() {};
-}
-
-// 创建阶段（按顺序）：
-// 1. 创建 arguments 对象
-// 2. 扫描函数声明：d = function d() {}
-// 3. 扫描变量声明：c = undefined, e = undefined
-//    （注意：e 不会被赋值为函数，因为是函数表达式）
 ```
 
 ### 2. 执行阶段
 
-代码开始逐行执行，变量被赋值，函数被执行。
+代码逐行执行，变量被赋值。
 
 ```javascript
 function fn() {
   console.log(a); // undefined（创建阶段已声明）
-  var a = 1;
-  console.log(a); // 1（执行阶段赋值）
+  var a = 1;      // 执行阶段赋值
+  console.log(a); // 1
 }
-
 fn();
 ```
 
 ### 3. 销毁阶段
 
-函数执行完毕后，执行上下文从栈中弹出，等待垃圾回收。
+函数执行完毕，执行上下文从栈中弹出。
 
 ```javascript
 function outer() {
   let count = 0;
-  
   function inner() {
     count++;
     return count;
   }
-  
   return inner;
 }
 
-const fn = outer();
-// outer 的执行上下文已销毁
-// 但 count 变量被闭包引用，不会被回收
-
-console.log(fn()); // 1
-console.log(fn()); // 2
-```
-
-### 完整生命周期示例
-
-```javascript
-console.log(a); // undefined（变量提升）
-console.log(b); // function b() {}
-
-var a = 1;
-function b() {
-  console.log('b');
-}
-console.log(a); // 1
-
-// 实际执行过程：
-// 1. 全局上下文创建阶段：
-//    - a = undefined
-//    - b = function b() {}
-// 2. 全局上下文执行阶段：
-//    - 输出 undefined
-//    - 输出 function b() {}
-//    - a = 1（赋值）
-//    - 输出 1
+const fn = outer(); // outer 上下文销毁，但 count 被闭包引用保留
+console.log(fn());  // 1
+console.log(fn());  // 2
 ```
 
 ---
