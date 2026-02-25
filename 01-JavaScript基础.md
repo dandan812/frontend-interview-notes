@@ -996,61 +996,473 @@ loggedAdd(2, 3);
 
 ### 13. this的绑定规则有哪些？分别是什么？
 
-**待回答**
+**回答：**
+
+### this 的 5 种绑定规则
+
+| 规则 | 说明 | this 指向 |
+|------|------|----------|
+| 默认绑定 | 函数独立调用 | 全局对象（浏览器window） |
+| 隐式绑定 | 作为对象方法调用 | 调用该函数的对象 |
+| 显式绑定 | call/apply/bind | 第一个参数 |
+| new 绑定 | new 关键字调用 | 新创建的实例对象 |
+| 箭头函数 | 箭头函数 | 外层作用域的 this |
+
+### 代码示例
+
+```javascript
+// 1. 默认绑定
+function fn1() {
+  console.log(this); // window（浏览器）
+}
+fn1();
+
+// 2. 隐式绑定
+const obj = {
+  name: '张三',
+  fn2() {
+    console.log(this.name); // '张三'
+  }
+};
+obj.fn2();
+
+// 3. 显式绑定
+function fn3() {
+  console.log(this.name);
+}
+const obj1 = { name: '李四' };
+fn3.call(obj1); // '李四'
+
+// 4. new 绑定
+function Person(name) {
+  this.name = name;
+}
+const p = new Person('王五');
+console.log(p.name); // '王五'
+```
 
 ---
 
 ### 14. 箭头函数的this指向哪里？与普通函数有何区别？
 
-**待回答**
+**回答：**
+
+### 箭头函数的 this
+
+箭头函数**没有自己的 this**，它的 this 继承自**外层作用域**的 this。
+
+### 与普通函数的区别
+
+| 特性 | 普通函数 | 箭头函数 |
+|------|----------|----------|
+| this 来源 | 动态绑定 | 继承外层作用域 |
+| call/apply/bind | 可以改变 this | 无法改变 this |
+| new 绑定 | 可以作为构造函数 | 不能作为构造函数 |
+| arguments | 有 arguments 对象 | 没有 arguments |
+| 原型 | 有 prototype | 没有 prototype |
+
+### 代码示例
+
+```javascript
+// 箭头函数 this 继承外层
+const obj = {
+  name: '张三',
+  fn() {
+    setTimeout(() => {
+      console.log(this.name); // '张三'（继承自外层）
+    }, 100);
+    
+    setTimeout(function() {
+      console.log(this.name); // undefined（默认绑定）
+    }, 100);
+  }
+};
+obj.fn();
+
+// 箭头函数无法通过 call 改变 this
+const fn = () => console.log(this);
+fn.call({ name: '李四' }); // 还是指向外层作用域
+```
 
 ---
 
 ### 15. call、apply、bind的区别是什么？
 
-**待回答**
+**回答：**
+
+### 三者对比
+
+| 方法 | 参数 | 执行方式 | 常用场景 |
+|------|------|----------|----------|
+| call | thisArg, param1, param2, ... | 立即执行 | 借用方法、指定 this |
+| apply | thisArg, [params] | 立即执行 | 数组参数、借用方法 |
+| bind | thisArg, param1, param2, ... | 返回新函数 | 偏函数、延迟执行 |
+
+### 代码示例
+
+```javascript
+function sum(a, b) {
+  return a + b;
+}
+
+// call：参数逐个传递
+console.log(sum.call(null, 1, 2)); // 3
+
+// apply：参数数组
+console.log(sum.apply(null, [1, 2])); // 3
+
+// bind：返回新函数
+const add1 = sum.bind(null, 1);
+console.log(add1(2)); // 3
+
+// 借用方法
+const arr = [1, 2, 3];
+Math.max.apply(null, arr); // 3
+```
 
 ---
 
 ### 16. 如何实现一个自己的bind函数？
 
-**待回答**
+**回答：**
+
+### 简易版 bind
+
+```javascript
+Function.prototype.myBind = function(context, ...args1) {
+  const fn = this;
+  return function(...args2) {
+    return fn.apply(context, [...args1, ...args2]);
+  };
+};
+```
+
+### 完整版 bind（支持 new）
+
+```javascript
+Function.prototype.myBind = function(context, ...args1) {
+  const fn = this;
+  
+  // 中间函数用于处理原型链
+  function F() {}
+  
+  function boundFn(...args2) {
+    const ctx = this instanceof F ? this : context;
+    return fn.apply(ctx, [...args1, ...args2]);
+  }
+  
+  F.prototype = fn.prototype;
+  boundFn.prototype = new F();
+  
+  return boundFn;
+};
+```
+
+### 测试代码
+
+```javascript
+function Person(name, age) {
+  this.name = name;
+  this.age = age;
+}
+
+const obj = {};
+const BoundPerson = Person.myBind(obj, '张三');
+const p = new BoundPerson(20);
+console.log(obj.name); // undefined（new 时忽略绑定的 context）
+console.log(p.name); // '张三'
+```
 
 ---
 
 ### 17. 什么是原型？什么是原型链？
 
-**待回答**
+**回答：**
+
+### 原型（Prototype）
+
+每个函数都有一个 `prototype` 属性，指向一个对象。这个对象就是所有通过该构造函数创建的实例的**原型**。
+
+### 原型链（Prototype Chain）
+
+当访问对象的属性时，如果对象本身没有，就会去它的原型对象上找，如果还没有，就继续找原型的原型，直到找到 `null`，这就是**原型链**。
+
+### 代码示例
+
+```javascript
+// 构造函数
+function Person(name) {
+  this.name = name;
+}
+
+// 原型上添加方法
+Person.prototype.sayHi = function() {
+  console.log('Hi, ' + this.name);
+};
+
+// 创建实例
+const p = new Person('张三');
+p.sayHi(); // 'Hi, 张三'
+
+// 原型链关系
+console.log(p.__proto__ === Person.prototype); // true
+console.log(Person.prototype.__proto__ === Object.prototype); // true
+console.log(Object.prototype.__proto__ === null); // true
+```
 
 ---
 
 ### 18. 原型链的查找机制是怎样的？
 
-**待回答**
+**回答：**
+
+### 查找过程
+
+1. **对象本身** → 找到则返回
+2. **对象的 `__proto__`** → 原型对象 → 找到则返回
+3. **原型对象的 `__proto__`** → 继续向上查找
+4. **直到 `null`** → 找不到返回 `undefined`
+
+### 代码示例
+
+```javascript
+function Person() {}
+Person.prototype.a = 1;
+
+function Student() {}
+Student.prototype = new Person();
+Student.prototype.b = 2;
+
+const s = new Student();
+s.c = 3;
+
+// 查找属性
+console.log(s.c); // 3（对象本身）
+console.log(s.b); // 2（Student.prototype）
+console.log(s.a); // 1（Person.prototype）
+console.log(s.d); // undefined（到 null 都没找到）
+
+// hasOwnProperty 只检查对象本身
+console.log(s.hasOwnProperty('c')); // true
+console.log(s.hasOwnProperty('a')); // false
+```
 
 ---
 
 ### 19. 如何实现继承？ES5有哪些继承方式？
 
-**待回答**
+**回答：**
+
+### ES5 继承方式
+
+| 方式 | 优点 | 缺点 |
+|------|------|------|
+| 原型链继承 | 简单易实现 | 所有实例共享原型 |
+| 构造函数继承 | 不共享原型 | 无法继承原型方法 |
+| 组合继承 | 结合两者优点 | 调用两次父构造函数 |
+| 寄生组合继承 | 最优方案 | 实现稍复杂 |
+
+### 1. 原型链继承
+
+```javascript
+function Parent() {
+  this.name = 'parent';
+}
+
+Parent.prototype.say = function() {
+  console.log('say');
+};
+
+function Child() {}
+Child.prototype = new Parent();
+
+const c = new Child();
+c.say(); // 'say'
+```
+
+### 2. 构造函数继承
+
+```javascript
+function Parent(name) {
+  this.name = name;
+}
+
+function Child(name) {
+  Parent.call(this, name);
+}
+
+const c = new Child('child');
+console.log(c.name); // 'child'
+```
+
+### 3. 组合继承
+
+```javascript
+function Parent(name) {
+  this.name = name;
+}
+
+Parent.prototype.say = function() {
+  console.log(this.name);
+};
+
+function Child(name) {
+  Parent.call(this, name);
+}
+
+Child.prototype = new Parent();
+Child.prototype.constructor = Child;
+
+const c = new Child('child');
+c.say(); // 'child'
+```
 
 ---
 
 ### 20. ES6的class语法糖背后是什么原理？
 
-**待回答**
+**回答：**
+
+ES6 的 `class` 本质上是 **ES5 寄生组合继承的语法糖**。
+
+### class 转 ES5 示例
+
+```javascript
+// ES6 class
+class Person {
+  constructor(name) {
+    this.name = name;
+  }
+  
+  sayHi() {
+    console.log('Hi, ' + this.name);
+  }
+}
+
+// 等价于 ES5 实现
+function Person(name) {
+  this.name = name;
+}
+
+Person.prototype.sayHi = function() {
+  console.log('Hi, ' + this.name);
+};
+```
+
+### extends 原理
+
+```javascript
+// ES6
+class Student extends Person {
+  constructor(name, grade) {
+    super(name);
+    this.grade = grade;
+  }
+}
+
+// 等价于：寄生组合继承
+function Student(name, grade) {
+  Person.call(this, name);
+  this.grade = grade;
+}
+
+Student.prototype = Object.create(Person.prototype);
+Student.prototype.constructor = Student;
+```
 
 ---
 
 ### 21. 寄生组合继承的实现原理是什么？
 
-**待回答**
+**回答：**
+
+### 核心思想
+
+1. **借用父构造函数**：继承实例属性
+2. **原型继承**：继承原型方法（但不创建多余父实例）
+
+### 实现代码
+
+```javascript
+function Parent(name) {
+  this.name = name;
+}
+
+Parent.prototype.say = function() {
+  console.log(this.name);
+};
+
+function Child(name, age) {
+  Parent.call(this, name); // 继承实例属性
+  this.age = age;
+}
+
+// 关键：使用 Object.create 继承原型
+Child.prototype = Object.create(Parent.prototype);
+Child.prototype.constructor = Child;
+
+const c = new Child('child', 10);
+c.say(); // 'child'
+```
+
+### 为什么最优？
+
+| 问题 | 组合继承 | 寄生组合继承 |
+|------|----------|--------------|
+| 父构造函数调用次数 | 2 次 | 1 次 |
+| 子类原型上有无父属性 | 有 | 无 |
+| 性能 | 较差 | 更好 |
 
 ---
 
 ### 22. 如何理解constructor属性？
 
-**待回答**
+**回答：**
+
+### constructor 是什么
+
+每个**原型对象**都有一个 `constructor` 属性，指向**对应的构造函数**。
+
+### 代码示例
+
+```javascript
+function Person() {}
+
+console.log(Person.prototype.constructor === Person); // true
+
+const p = new Person();
+console.log(p.constructor === Person); // true（实例继承自原型）
+```
+
+### 继承时需要修正 constructor
+
+```javascript
+function Parent() {}
+function Child() {}
+
+// 原型继承
+Child.prototype = new Parent();
+console.log(Child.prototype.constructor === Parent); // true（错误）
+
+// 修正 constructor
+Child.prototype.constructor = Child;
+console.log(Child.prototype.constructor === Child); // true（正确）
+```
+
+### constructor 的作用
+
+1. **标识类型**：`instance.constructor` 可以判断实例类型
+2. **克隆对象**：可以通过 `new obj.constructor()` 克隆对象
+
+```javascript
+function Person(name) {
+  this.name = name;
+}
+
+const p1 = new Person('张三');
+const p2 = new p1.constructor('李四');
+console.log(p2.name); // '李四'
+```
 
 ---
 
