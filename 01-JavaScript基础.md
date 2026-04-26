@@ -997,20 +997,23 @@ x ??= 1; // x ??= 1 等价于 x ?? (x = 1)
 
 ---
 
-## 1.5 类型/转换/判断（6道）
+## 1.5 类型/转换/判断（7道）
 
 ### 50. ==和===的区别是什么？
 
 **回答：**
 
-- `===`：严格相等，不隐式转换
-- `==`：宽松相等，会隐式转换
+| 区别 | == (等值) | === (等型等值) |
+|------|-----------|---------------|
+| **类型转换** | ✅ 会尝试隐式转换 | ❌ 不转换，类型不同即 false |
+| **比较逻辑** | 转换后值相等即 true | 类型相同且值相等才 true |
+| **特殊情况** | `null == undefined` 为 true | `null === undefined` 为 false |
 
 ```javascript
-1 === '1';   // false
-1 == '1';    // true（转成数字比较）
+1 == '1';   // true
+1 === '1';  // false
 null == undefined; // true
-NaN === NaN; // false（NaN 不等于任何值）
+[] == false; // true (隐式转换过程：[] -> '' -> 0, false -> 0)
 ```
 
 ---
@@ -1019,26 +1022,20 @@ NaN === NaN; // false（NaN 不等于任何值）
 
 **回答：**
 
-| 操作 | 转换规则 |
-|------|----------|
-| +（字符串）| 任意转字符串 |
-| - * / % | 转数字 |
-| == != | 转数字比较 |
-| ! | 转布尔 |
+1. **转换为布尔值**：在 `if`、`while`、`逻辑运算符` 中。
+   - `falsy` 值：`false`, `0`, `""`, `null`, `undefined`, `NaN`。
+2. **转换为数字**：
+   - 算术运算符（`+` 且一边有字符串除外）：`-`, `*`, `/`, `++`, `--`。
+   - 比较运算符：`>`, `<`, `>=`, `<=`。
+   - `+` 一元运算符。
+3. **转换为字符串**：
+   - `+` 二元运算符且一边为字符串。
 
 ```javascript
-// + 字符串优先
-'1' + 1;   // '11'
-1 + true;  // 2（true→1）
-1 + {};    // '1[object Object]'
-
-// - 转数字
-'5' - 2;   // 3
-'5' * '2';  // 10
-
-// 布尔
-!!'';      // false
-!!1;       // true
+'5' - 2;   // 3 (数字)
+'5' + 2;   // '52' (字符串)
++ '10';    // 10 (数字)
+if ([]) { } // true (对象转布尔永远为 true)
 ```
 
 ---
@@ -1047,17 +1044,16 @@ NaN === NaN; // false（NaN 不等于任何值）
 
 **回答：**
 
-| 缺陷 | 说明 |
-|------|------|
-| null | typeof null → 'object' |
-| 函数对象 | 无法细分 |
-| 正则 | typeof /a/ → 'object' |
+1. **`typeof null` 结果为 `'object'`**（历史遗留 Bug）。
+2. **无法区分对象、数组、正则、日期**（全部返回 `'object'`）。
+3. **NaN 返回 `'number'`**。
 
 ```javascript
-typeof null;        // 'object' ❌ 历史 bug
-typeof [];          // 'object' ❌ 数组也是 object
-typeof function(){} // 'function' ✅
-typeof /a/;        // 'object'
+typeof null;      // 'object'
+typeof [];        // 'object'
+typeof {};        // 'object'
+typeof /a/;       // 'object'
+typeof NaN;       // 'number'
 ```
 
 ---
@@ -1066,24 +1062,15 @@ typeof /a/;        // 'object'
 
 **回答：**
 
-| 类型 | 判断方法 |
-|------|----------|
-| 原始类型 | typeof |
-| 对象类型 | Object.prototype.toString.call() |
-| 数组 | Array.isArray() |
-| 实例 | instanceof |
+1. **`typeof`**：判断基础类型（除 null）和函数。
+2. **`instanceof`**：判断实例与构造函数的关系（原型链）。
+3. **`Array.isArray()`**：专门判断数组。
+4. **`Object.prototype.toString.call()`**：**最准确**，返回 `[object Type]`。
 
 ```javascript
-typeof 'str';     // 'string'
-typeof 123;       // 'number'
-typeof true;      // 'boolean'
-typeof undefined; // 'undefined'
-typeof null;      // 'object'（bug）
-
-Array.isArray([]); // true
-
-[] instanceof Array; // true
-{} instanceof Object; // true
+Object.prototype.toString.call([]);      // "[object Array]"
+Object.prototype.toString.call(null);    // "[object Null]"
+Object.prototype.toString.call(new Date()); // "[object Date]"
 ```
 
 ---
@@ -1092,17 +1079,8 @@ Array.isArray([]); // true
 
 **回答：**
 
-调用对象的 toString 方法，获取内部 [[Class]]。
-
-```javascript
-Object.prototype.toString.call(1);      // '[object Number]'
-Object.prototype.toString.call('str'); // '[object String]'
-Object.prototype.toString.call(true);  // '[object Boolean]'
-Object.prototype.toString.call([]);    // '[object Array]'
-Object.prototype.toString.call({});    // '[object Object]'
-Object.prototype.toString.call(null);  // '[object Null]'
-Object.prototype.toString.call(undefined); // '[object Undefined]'
-```
+每个内置对象都有一个 `[[Class]]` 内部属性，其值为该对象的类型。`toString()` 方法会读取这个属性并返回格式为 `[object type]` 的字符串。
+由于很多对象重写了 `toString`，所以必须使用 `call` 或 `apply` 借用 `Object.prototype` 上的原始方法。
 
 ---
 
@@ -1110,21 +1088,15 @@ Object.prototype.toString.call(undefined); // '[object Undefined]'
 
 **回答：**
 
+1. **`Object.keys(obj).length === 0`** (最常用)。
+2. **`JSON.stringify(obj) === '{}'`**。
+3. **`for...in` 循环** (配合 `hasOwnProperty`)。
+
 ```javascript
 const obj = {};
-
-// 方法1：Object.keys
 Object.keys(obj).length === 0; // true
 
-// 方法2：for...in
-for (let k in obj) { return false; }
-return true;
-
-// 方法3：JSON.stringify（不推荐，有顺序问题）
-JSON.stringify(obj) === '{}';
-
-// 方法4：Reflect.ownKeys
-Reflect.ownKeys(obj).length === 0;
+// 注意：Object.keys 拿不到不可枚举属性和 Symbol 属性
 ```
 
 ---
