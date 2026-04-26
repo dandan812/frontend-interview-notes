@@ -2,7 +2,7 @@
 
 ## 3.1 基础使用/选项式API（8道）
 
-### 101. Vue local life cycle有哪些？各阶段做了什么？
+### 101. Vue local life cycle（组件生命周期）有哪些？各阶段做了什么？
 
 **回答：**
 
